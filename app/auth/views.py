@@ -1,15 +1,36 @@
+# from app.models import User
+from flask import request, jsonify, Blueprint, abort, make_response
+from .. import db, jwt
 from app.models import User
-from flask import request, jsonify, Blueprint, json
-from .. import db
-
-auth = Blueprint('auth', __name__, url_prefix='/auth')
 
 
-@auth.route('/register', methods=['POST'])
-def register():
-    return jsonify({'message': 'Register user here'})
+auth = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
+
+from .validate import validate_json, authenticate, identity
 
 
 @auth.route('/login', methods=['POST'])
+@validate_json('username', 'password')
 def login():
-    return jsonify({'message': 'Authenticate user here'})
+    data = request.get_json()
+
+    identity = jwt.authentication_callback(data['username'], data['password'])
+    if identity:
+        access_token = jwt.jwt_encode_callback(identity)
+        return jwt.auth_response_callback(access_token, identity)
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401
+
+
+@auth.route('/register', methods=['POST'])
+@validate_json('username', 'password')
+def register():
+    data = request.get_json()
+    username, password = data['username'], data['password']
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return jsonify({'error': 'User already exists'}), 409
+    user = User(username=username, password=password)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({'message': 'User registered successfully'}), 201
