@@ -1,57 +1,72 @@
-import unittest
-from app import db, create_app
-from app.models import User
-import json
+from flask import json
+from base_class import TestBase
 
 
-class ApiTestCase(unittest.TestCase):
-    """Tests for API"""
-
-    def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-        self.client = self.app.test_client()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
+class ApiTestCase(TestBase):
+    """Tests for Authentication"""
 
     # test register
     def test_register(self):
-        data = json.dumps({'username': 'kiki', 'password': 'nuf'})
-        url, mime_type = 'auth/register', 'application/json'
+        # test register with valid credentials
+        data = json.dumps({'username': 'shem', 'password': 'shem123'})
+        url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
-        json_response = json.loads(response.data.decode('utf-8'))
         self.assertEqual(response.status_code, 201)
-        self.assertEqual('User registered sucessfully',
-                         json_response['message'])
 
-    # test register existing user
-    def test_register_existing_user(self):
-        user = User(username='kim', password='kim')
-        db.session.add(user)
-        db.session.commit()
-        # register same user
-        data = json.dumps({'username': 'kim', 'password': 'kim'})
-        url, mime_type = 'auth/register', 'application/json'
-        response = self.client.post(url, data=data, content_type=mime_type)
-        json_response = json.loads(response.data.decode('utf-8'))
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual('User already exists', json_response['message'])
+        response = json.loads(response.data)
+        self.assertEqual('User registered successfully', response['message'])
 
-    # test invalid content_type
-    def test_invalid_mime_type(self):
+        # test register existing user
         data = json.dumps({'username': 'kiki', 'password': 'nuf'})
-        url, mime_type = 'auth/register', 'application/text/html'
+        url, mime_type = 'api/v1/auth/register', 'application/json'
+        response = self.client.post(url, data=data, content_type=mime_type)
+        self.assertEqual(response.status_code, 409)
+
+        response = json.loads(response.data)
+        self.assertEqual('User already exists', response['error'])
+
+        # test registration with missing password
+        data = json.dumps({'username': 'doodle', 'password': ''})
+        url, mime_type = 'api/v1/auth/register', 'application/json'
+        response = self.client.post(url, data=data, content_type=mime_type)
+        self.assertEqual(response.status_code, 400)
+
+        response = json.loads(response.data)
+        self.assertEqual(response['error'], 'username and password required')
+
+        # test registration with missing username
+        data = json.dumps({'username': '', 'password': 'ninjax'})
+        url, mime_type = 'api/v1/auth/register', 'application/json'
+        response = self.client.post(url, data=data, content_type=mime_type)
+        self.assertEqual(response.status_code, 400)
+
+        response = json.loads(response.data)
+        self.assertEqual(response['error'], 'username and password required')
+
+        # test invalid content_type
+        data = json.dumps({'username': 'kiki', 'password': 'nuf'})
+        url, mime_type = 'api/v1/auth/register', 'application/text/html'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 415)
 
-    # Test login
+        # Test login
     def test_login(self):
-        data = json.dumps({'username': 'kiki', 'password': 'nuf'})
-        url, mime_type = 'auth/login', 'application/json'
+        data = json.dumps({'username': 'kiki', 'password': 'shesheni'})
+        url, mime_type = 'api/v1/auth/login', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
+
+        response = json.loads(response.data)
+        self.assertIn('access_token', response)
+
+        # test user is not authenticated with invalid credentials
+        data = json.dumps({'username': '123', 'password': '123'})
+        url, mime_type = 'api/v1/auth/login', 'application/json'
+        response = self.client.post(url, data=data, content_type=mime_type)
+        self.assertEqual(response.status_code, 401)
+
+        # test user is not authenticated with password or username missing
+        data = json.dumps({'username': '', 'password': ''})
+        url, mime_type = 'api/v1/auth/login', 'application/json'
+        response = self.client.post(url, data=data, content_type=mime_type)
+        self.assertEqual(response.status_code, 400)
