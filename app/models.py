@@ -1,15 +1,25 @@
 from app import db
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 class User(db.Model):
     """Model for User."""
     __tablename__ = 'user'
 
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True)
     password = db.Column(db.String(64), unique=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    bucket_list = db.relationship('BucketList', backref="bucket", lazy='dynamic')
+    bucket_list = db.relationship(
+        'BucketList', backref="bucket", lazy='dynamic')
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password, password)
 
     def __repr__(self):
         return '<User %s>' % self.username
@@ -17,9 +27,9 @@ class User(db.Model):
 
 class BucketList(db.Model):
     """Model for Bucket."""
-    __tablename__= 'bucketlist'
+    __tablename__ = 'bucketlist'
 
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     items = db.relationship('Item', backref="items", lazy='dynamic')
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
@@ -30,12 +40,11 @@ class BucketList(db.Model):
         return '<BucketList %s>' % self.name
 
 
-
 class Item(db.Model):
     """Modelfor BucketList."""
     __tablename__ = 'item'
 
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     date_modified = db.Column(db.DateTime, default=datetime.utcnow)
