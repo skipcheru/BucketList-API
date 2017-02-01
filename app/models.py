@@ -39,6 +39,18 @@ class BucketList(db.Model):
     def __repr__(self):
         return '<BucketList %s>' % self.name
 
+    def to_json(self):
+
+        bucket_json = {
+            "Id": self.id,
+            "Name": self.name,
+            "items": [item.to_json() for item in self.items],
+            "date_created": str(self.date_created),
+            "date_modified": str(self.date_modified),
+            "created_by": self.user_id
+        }
+        return bucket_json
+
 
 class Item(db.Model):
     """Modelfor BucketList."""
@@ -53,3 +65,13 @@ class Item(db.Model):
 
     def __repr__(self):
         return '<Item %s>' % self.name
+
+    def to_json(self):
+        item_json = {
+            "id": self.id,
+            "name": self.name,
+            "date_created": str(self.date_created),
+            "date_modified": str(self.date_modified),
+            "done": self.done
+        }
+        return item_json
