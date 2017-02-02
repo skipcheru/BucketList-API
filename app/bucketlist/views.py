@@ -3,13 +3,15 @@ from flask import request, jsonify, Blueprint
 from app import db, jwt
 from flask_jwt import jwt_required, current_identity
 from app.auth.validate import validate_json
+from datetime import datetime
+from sqlalchemy.sql import func
 
 
 bucketlists = Blueprint('bucketlists', __name__,
                         url_prefix='/api/v1/bucketlists')
 
 
-# get method for all bucketlists and search bucketlists
+# Get all bucketlists and search bucketlists
 @bucketlists.route('/', methods=['GET'])
 @jwt_required()
 def get_bucketlist():
@@ -27,7 +29,7 @@ def get_bucketlist():
     return jsonify(buckets), 200
 
 
-# add new bucketlist here
+# Add new bucketlist
 @bucketlists.route('/', methods=['POST'])
 @jwt_required()
 @validate_json('name')
@@ -44,6 +46,7 @@ def new_bucketlist():
     return jsonify({'message': 'BucketList added successfully'}), 201
 
 
+# Update single bucketlist
 @bucketlists.route('/<int:bucket_id>', methods=['PUT'])
 @jwt_required()
 @validate_json('name')
@@ -52,12 +55,14 @@ def update_bucketlist(bucket_id):
     return any_request(request.method, BucketList, bucket_id, data)
 
 
+# Get and Delete single bucketlist
 @bucketlists.route('/<int:bucket_id>', methods=['GET', 'DELETE'])
 @jwt_required()
 def bucketlist(bucket_id):
     return any_request(request.method, BucketList, bucket_id, None)
 
 
+# Get all bucketlist items
 @bucketlists.route('/<int:bucket_id>/items/', methods=['GET'])
 @jwt_required()
 def get_bucketlist_item(bucket_id):
@@ -66,6 +71,7 @@ def get_bucketlist_item(bucket_id):
     return jsonify(all_items), 200
 
 
+# Create new  bucketlist item
 @bucketlists.route('/<int:bucket_id>/items/', methods=['POST'])
 @jwt_required()
 @validate_json('name')
@@ -81,6 +87,7 @@ def new_bucketlist_item(bucket_id):
     return jsonify({'message': 'Bucketlist item added'}), 201
 
 
+# Update bucketlist item
 @bucketlists.route('/<int:bucket_id>/items/<int:item_id>', methods=['PUT'])
 @jwt_required()
 @validate_json('name')
@@ -89,6 +96,7 @@ def update_bucketlist_item(item_id, bucket_id):
     return any_request(request.method, Item, item_id, data)
 
 
+# Get and Delete bucketlist item
 @bucketlists.route('/<int:bucket_id>/items/<int:item_id>',
                    methods=['GET', 'DELETE'])
 @jwt_required()
@@ -110,6 +118,7 @@ def any_request(method, model, model_id, data):
 
     elif method == 'PUT':
         model_obj.name = data['name']
+        model_obj.date_modified = func.now()
         db.session.commit()
         return jsonify({'message': model().__class__.__name__ +
                         ' updated successfully'}), 200
