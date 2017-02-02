@@ -13,15 +13,18 @@ bucketlists = Blueprint('bucketlists', __name__,
 @bucketlists.route('/', methods=['GET'])
 @jwt_required()
 def get_bucketlist():
-    query = request.args.get('q')
-    if query:
-        bucket = BucketList.query.filter_by(name=query).first()
-        if bucket:
-            return jsonify(bucket.to_json())
+    search = request.args.get('q', '')
+    page = request.args.get('page', 1)
+    limit = request.args.get('limit', 20)
+
+    results = BucketList.query.filter_by(user_id=current_identity.id).filter(
+        BucketList.name.ilike(f'%{search}%')).paginate(int(page), int(limit), False)
+    if not results:
         return jsonify({"error": "BucketList not found"}), 404
 
-    all_buckets = [bucket.to_json() for bucket in BucketList.query.all()]
-    return jsonify(all_buckets)
+    buckets = [bucket.to_json() for bucket in results.items]
+
+    return jsonify(buckets), 200
 
 
 # add new bucketlist here
@@ -30,6 +33,7 @@ def get_bucketlist():
 @validate_json('name')
 def new_bucketlist():
     data = request.get_json()
+
     bucket = BucketList.query.filter_by(name=data['name']).first()
     if bucket:
         return jsonify({'error': 'BucketList already exists'}), 409
@@ -45,19 +49,13 @@ def new_bucketlist():
 @validate_json('name')
 def update_bucketlist(bucket_id):
     data = request.get_json()
-    bucket = BucketList.query.filter_by(id=bucket_id).first()
-    if bucket:
-        bucket.name = data['name']
-        db.session.commit()
-        return jsonify({'message': 'BucketList updated successfully'}), 201
-
-    return jsonify({'error': 'BucketList not Found'}), 404
+    return any_request(request.method, BucketList, bucket_id, data)
 
 
 @bucketlists.route('/<int:bucket_id>', methods=['GET', 'DELETE'])
 @jwt_required()
 def bucketlist(bucket_id):
-    return any_request(request.method, BucketList, bucket_id)
+    return any_request(request.method, BucketList, bucket_id, None)
 
 
 @bucketlists.route('/<int:bucket_id>/items/', methods=['GET'])
@@ -88,32 +86,36 @@ def new_bucketlist_item(bucket_id):
 @validate_json('name')
 def update_bucketlist_item(item_id, bucket_id):
     data = request.get_json()
-    item = Item.query.filter_by(id=item_id).first()
-    if item:
-        item.name = data['name']
-        db.session.commit()
-        return jsonify({'message': 'Item updated successfully'}), 201
-
-    return jsonify({'error': 'BucketList not Found'}), 404
+    return any_request(request.method, Item, item_id, data)
 
 
 @bucketlists.route('/<int:bucket_id>/items/<int:item_id>',
                    methods=['GET', 'DELETE'])
 @jwt_required()
 def modify_bucketlist_item(bucket_id, item_id):
-    return any_request(request.method, Item, item_id)
+    return any_request(request.method, Item, item_id, None)
 
 
-# use this to carry out DELETE OR GET
-def any_request(method, model, model_id):
+# use this to carry out GET, PUT, DELETE
+def any_request(method, model, model_id, data):
+
     model_obj = model.query.filter_by(id=model_id).first()
+
     if not model_obj:
-        return jsonify({'error': model().__class__.__name__ + ' not Found'}), 404
+        return jsonify({'error': model().__class__.__name__ +
+                        ' not found'}), 404
 
     if method == 'GET':
         return jsonify(model_obj.to_json()), 200
 
+    elif method == 'PUT':
+        model_obj.name = data['name']
+        db.session.commit()
+        return jsonify({'message': model().__class__.__name__ +
+                        ' updated successfully'}), 200
+
     elif method == 'DELETE':
         db.session.delete(model_obj)
         db.session.commit()
-        return jsonify({'message': model().__class__.__name__ + ' deleted successfully'}), 200
+        return jsonify({'message': model().__class__.__name__ +
+                        ' deleted successfully'}), 200
