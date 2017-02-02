@@ -1,11 +1,12 @@
 from flask import json
 from base_class import TestBase
+from datetime import datetime
 
 
 class TestBucketList(TestBase):
     """TestBucketList class that has all test for bucketlist."""
 
-    def test_authorization(self):
+    def test_invalid_authorization(self):
         # add new bucketlist
         data, mime_type = {'name': 'BucketList A'}, 'application/json'
         url = 'api/v1/bucketlists/'
@@ -18,18 +19,45 @@ class TestBucketList(TestBase):
 
     def test_create_bucketlist(self):
         # add new bucketlist
-        data, mime_type = {'name': 'BucketList A'}, 'application/json'
-        url = 'api/v1/bucketlists/'
+        data = json.dumps({'name': 'New BucketList'})
+        message = 'BucketList added successfully'
+        url, mime_type = 'api/v1/bucketlists/', 'application/json'
+
         response = self.client.post(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 201)
 
-    def test_get_bucketlist(self):
+        response = json.loads(response.data)
+        self.assertEqual(response['message'], message)
+
+    # test search bucket list
+    def test_search_bucketlist(self):
+        # test search existing bucket list
+        url, mime_type = 'api/v1/bucketlists/?q=BucketList A', 'application/json'
+
+        response = self.client.get(
+            url, headers=self.headers, content_type=mime_type)
+        self.assertEqual(response.status_code, 200)
+
+        response = json.loads(response.data)
+        self.assertEqual(response['Name'], 'BucketList A')
+
+        # test search non existing bucket list
+        url, mime_type = 'api/v1/bucketlists/?q=Bucket', 'application/json'
+
+        response = self.client.get(
+            url, headers=self.headers, content_type=mime_type)
+        self.assertEqual(response.status_code, 404)
+
+        response = json.loads(response.data)
+        self.assertEqual(response['error'], 'BucketList not found')
+
+    def test_get_bucketlists(self):
         # Get all bucketlists
         buckets = json.dumps([{'id': 1,
                                'name': 'BucketList A',
                                'items': [],
-                               'date_created': '2016-01-23 18:58:00',
+                               'date_created': str(datetime.utcnow),
                                'date_modified': '',
                                'created_by': 'kiki'
                                }])
@@ -49,7 +77,7 @@ class TestBucketList(TestBase):
 
     def test_update_bucketlist(self):
         # test update existing bucketlist
-        data = json.dumps({'name': 'BucketList A'})
+        data = json.dumps({'name': 'BucketList AA'})
         url, mime_type = 'api/v1/bucketlists/1', 'application/json'
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
@@ -66,33 +94,36 @@ class TestBucketList(TestBase):
         self.assertEqual(response.status_code, 404)
 
         response = json.loads(response.data)
-        self.assertEqual(response.data['message'], 'BucketList not found')
+        self.assertEqual(response['error'], 'BucketList not found')
 
     def test_delete_bucketlist(self):
         # test update existing bucketlist
-        url = 'api/v1/bucketlists/1'
+        url, mime_type = 'api/v1/bucketlists/1', 'application/json'
         response = self.client.delete(
-            url, headers=self.headers, content_type='application/json')
+            url, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['message'],
+
+        response = json.loads(response.data)
+        self.assertEqual(response['message'],
                          'BucketList deleted successfully')
 
-        # test update non-existing bucketlist
+        # test delete non-existing bucketlist
+        url = 'api/v1/bucketlists/0'
         response = self.client.delete(
-            'api/v1/bucketlists/0', content_type='application/json')
+            url, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 404)
         response = json.loads(response.data)
-        self.assertEqual(response['message'], 'BucketList not found')
+        self.assertEqual(response['error'], 'BucketList not found')
 
 
 class TestBucketListItem(TestBase):
     """docstring for TestBucketListItem."""
 
     def test_get_bucketlist_item(self):
-        # Get all bucketlists
+        # Get bucketlist item
         item = json.dumps({'id': 1,
                            'name': 'Notify client on the bug fix',
-                           'date_created': '2016-01-23 18:58:00',
+                           'date_created': datetime.utcnow,
                            'date_modified': '',
                            'done': False
                            })
@@ -105,26 +136,29 @@ class TestBucketListItem(TestBase):
 
     def test_update_bucketlist_item(self):
         # test update existing bucketlist
-        data, url = {'name': 'Update Api'}, 'api/v1/bucketlists/1/items/1'
+        data = json.dumps({'name': 'New Update'})
+        url, mime_type = 'api/v1/bucketlists/1/items/1', 'application/json'
         response = self.client.put(
-            url, headers=self.headers, content_type='application/json')
+            url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
+
         response = json.loads(response.data)
         self.assertEqual(response['message'],
-                         'BucketList updated successfully')
+                         'Item updated successfully')
 
         # test update non-existing bucketlist
         url = 'api/v1/bucketlists/0'
         response = self.client.put(
-            url, headers=self.headers, content_type='application/json')
+            url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 404)
+
         response = json.loads(response.data)
-        self.assertEqual(response['message'], 'BucketList not found')
+        self.assertEqual(response['error'], 'BucketList not found')
 
         # test update existing bucketlist done to True
         data, url = {'done': True}, 'api/v1/bucketlists/1/items/1'
         response = self.client.put(
-            url, data=data, headers=self.headers, content_type='application/json')
+            url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['message'],
                          'BucketList updated successfully')
@@ -137,7 +171,7 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['message'],
-                         'BucketList deleted successfully')
+                         'Item deleted successfully')
 
         # test delete non-existing bucketlist
         url = 'api/v1/bucketlists/1/items/0'
@@ -145,4 +179,4 @@ class TestBucketListItem(TestBase):
             url, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 404)
         response = json.loads(response.data)
-        self.assertEqual(response['message'], 'BucketList not found')
+        self.assertEqual(response['error'], 'Item not found')
