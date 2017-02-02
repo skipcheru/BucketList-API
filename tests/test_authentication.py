@@ -1,23 +1,39 @@
+import unittest
 from flask import json
-from base_class import TestBase
+from app import db, create_app
+from app.models import User
 
 
-class ApiTestCase(TestBase):
+class ApiTestCase(unittest.TestCase):
     """Tests for Authentication"""
+
+    def setUp(self):
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
     # test register
     def test_register(self):
         # test register with valid credentials
-        data = json.dumps({'username': 'shem', 'password': 'shem123'})
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
+        user = User.query.filter_by(username='kiki').first()
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(user.username, 'kiki')
 
         response = json.loads(response.data)
         self.assertEqual('User registered successfully', response['message'])
 
         # test register existing user
-        data = json.dumps({'username': 'kiki', 'password': 'nuf'})
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 409)
@@ -32,7 +48,7 @@ class ApiTestCase(TestBase):
         self.assertEqual(response.status_code, 400)
 
         response = json.loads(response.data)
-        self.assertEqual(response['error'], 'username and password required')
+        self.assertEqual(response['error'], 'password required')
 
         # test registration with missing username
         data = json.dumps({'username': '', 'password': 'ninjax'})
@@ -41,7 +57,7 @@ class ApiTestCase(TestBase):
         self.assertEqual(response.status_code, 400)
 
         response = json.loads(response.data)
-        self.assertEqual(response['error'], 'username and password required')
+        self.assertEqual(response['error'], 'username required')
 
         # test invalid content_type
         data = json.dumps({'username': 'kiki', 'password': 'nuf'})
@@ -51,7 +67,12 @@ class ApiTestCase(TestBase):
 
         # Test login
     def test_login(self):
-        data = json.dumps({'username': 'kiki', 'password': 'shesheni'})
+        # register user first
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
+        url, mime_type = 'api/v1/auth/register', 'application/json'
+        self.client.post(url, data=data, content_type=mime_type)
+        # test login
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         url, mime_type = 'api/v1/auth/login', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
