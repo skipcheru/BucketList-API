@@ -19,7 +19,7 @@ def validate_json(*expected_args):
                 for argument in expected_args:
                     if (argument not in data or not data.get(argument) or
                             data.get(argument).isspace()):
-                        msg = 'username and password required'
+                        msg = argument + ' required'
                         return jsonify({'error': msg}), 400
             except BadRequest:
                 msg = "Request must have valid data"
@@ -31,6 +31,7 @@ def validate_json(*expected_args):
 from app.models import User
 
 
+# JWT handlers
 @jwt.authentication_handler
 def authenticate(username, password):
     user = User.query.filter_by(username=username).scalar()
