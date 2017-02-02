@@ -1,6 +1,6 @@
 from app import db
-from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.sql import func
 
 
 class User(db.Model):
@@ -10,9 +10,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True)
     password = db.Column(db.String(64), unique=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_created = db.Column(db.DateTime, default=func.now())
     bucket_list = db.relationship(
-        'BucketList', backref="bucket", lazy='dynamic')
+        'BucketList', backref="bucket", lazy='dynamic', cascade='delete,all')
 
     def __init__(self, username, password):
         self.username = username
@@ -31,9 +31,10 @@ class BucketList(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    items = db.relationship('Item', backref="items", lazy='dynamic')
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_modified = db.Column(db.DateTime, default=datetime.utcnow)
+    items = db.relationship('Item', backref="items",
+                            lazy='dynamic', cascade='delete,all')
+    date_created = db.Column(db.DateTime, default=func.now())
+    date_modified = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     def __repr__(self):
@@ -58,8 +59,8 @@ class Item(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_modified = db.Column(db.DateTime, default=datetime.utcnow)
+    date_created = db.Column(db.DateTime, default=func.now())
+    date_modified = db.Column(db.DateTime)
     done = db.Column(db.Boolean, default=False)
     bucket_id = db.Column(db.Integer, db.ForeignKey("bucketlist.id"))
 
