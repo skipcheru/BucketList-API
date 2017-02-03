@@ -16,14 +16,14 @@ def create_app(config_name):
     db.init_app(app)
     jwt.init_app(app)
 
-    from .auth.views import auth
+    from app.auth.views import auth
     app.register_blueprint(auth)
 
-    from .bucketlist.views import bucketlists
+    from app.bucketlist.views import bucketlists
     app.register_blueprint(bucketlists)
 
     return app
 
-from .auth.validate import authenticate, identity, jwt
+from app.auth.validate import authenticate, identity, jwt
 
 jwt = JWT(create_app('default'), authenticate, identity)

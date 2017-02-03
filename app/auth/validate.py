@@ -17,8 +17,7 @@ def validate_json(*expected_args):
             try:
                 data = request.get_json()
                 for argument in expected_args:
-                    if (argument not in data or not data.get(argument) or
-                            data.get(argument).isspace()):
+                    if (argument not in data or data.get(argument).isspace()):
                         msg = argument + ' required'
                         return jsonify({'error': msg}), 400
             except BadRequest:
