@@ -30,7 +30,7 @@ class BucketList(db.Model):
     __tablename__ = 'bucketlist'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64))
     items = db.relationship('Item', backref="items",
                             lazy='dynamic', cascade='delete,all')
     date_created = db.Column(db.DateTime, default=func.now())
@@ -58,7 +58,7 @@ class Item(db.Model):
     __tablename__ = 'item'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64))
     date_created = db.Column(db.DateTime, default=func.now())
     date_modified = db.Column(db.DateTime)
     done = db.Column(db.Boolean, default=False)
