@@ -1,12 +1,12 @@
-# from app.models import User
 from flask import request, jsonify, Blueprint, abort, make_response
 from app import db, jwt
 from app.models import User
+from sqlalchemy import exc
 
 
 auth = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
-from .validate import validate_json, authenticate, identity
+from app.auth.validate import validate_json, authenticate, identity
 
 
 # Authenticate user
@@ -29,11 +29,13 @@ def login():
 def register():
     data = request.get_json()
     username, password = data['username'], data['password']
-    user = User.query.filter_by(username=username).first()
-    if user:
-        return jsonify({'error': 'User already exists'}), 409
 
-    user = User(username=username, password=password)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({'message': 'User registered successfully'}), 201
+    try:
+        user = User(username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({'message': 'User registered successfully'}), 201
+
+    except exc.IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'error': 'User already exists'}), 409
