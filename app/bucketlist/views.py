@@ -36,7 +36,7 @@ def get_bucketlist():
 # Add new bucketlist
 @bucketlists.route('/', methods=['POST'])
 @jwt_required()
-@validate_json('name')
+@validate_json('name', 'description')
 def new_bucketlist():
     data = request.get_json()
     return post_request(BucketList, None, data)
@@ -45,10 +45,8 @@ def new_bucketlist():
 # Update single bucketlist
 @bucketlists.route('/<int:bucket_id>', methods=['PUT'])
 @jwt_required()
-@validate_json('name')
 def update_bucketlist(bucket_id):
-    data = request.get_json()
-    return any_request(request.method, BucketList, bucket_id, None, data)
+    return put_request(BucketList, request, bucket_id, None)
 
 
 # Get and Delete single bucketlist
@@ -79,10 +77,8 @@ def new_bucketlist_item(bucket_id):
 # Update bucketlist item
 @bucketlists.route('/<int:bucket_id>/items/<int:item_id>', methods=['PUT'])
 @jwt_required()
-@validate_json('name')
 def update_bucketlist_item(item_id, bucket_id):
-    data = request.get_json()
-    return any_request(request.method, Item, bucket_id, item_id, data)
+    return put_request(Item, request, bucket_id, item_id)
 
 
 # Get and Delete bucketlist item
@@ -93,7 +89,7 @@ def modify_bucketlist_item(bucket_id, item_id):
     return any_request(request.method, Item, bucket_id, item_id)
 
 
-# use this to carry out GET, PUT, DELETE
+# use this to carry out GET, DELETE
 def any_request(method, model, bucket_id=None, item_id=None, data=None):
     user_id = current_identity.id
 
@@ -111,18 +107,58 @@ def any_request(method, model, bucket_id=None, item_id=None, data=None):
     if method == 'GET':
         return jsonify(model_obj.to_json()), 200
 
-    elif method == 'PUT':
-        model_obj.name = data['name']
-        model_obj.date_modified = func.now()
-        db.session.commit()
-        return jsonify({'message': model().__class__.__name__ +
-                        ' updated successfully'}), 200
-
     elif method == 'DELETE':
         db.session.delete(model_obj)
         db.session.commit()
         return jsonify({'message': model().__class__.__name__ +
                         ' deleted successfully'}), 200
+
+
+# use this to carry out PUT request only
+def put_request(model, request, bucket_id, item_id):
+    user_id = current_identity.id
+
+    if not request.is_json:
+        return jsonify({"error": 'Request must be a valid json'}), 415
+
+    if model == BucketList:
+        model_obj = model.query.filter_by(
+            user_id=user_id, id=bucket_id).first()
+    else:
+        model_obj = model.query.filter_by(
+            bucket_id=bucket_id, id=item_id).filter(User.id == user_id).first()
+
+    if not model_obj:
+        return jsonify({'error': model().__class__.__name__ + ' not found'}), 404
+
+    response = jsonify({'message': model().__class__.__name__ +
+                        ' updated successfully'}), 200
+
+    data = request.get_json()
+    description = data.get('description', None)
+    status = data.get('status', None)
+    name = data.get('name', None)
+
+    if name and name.isspace():
+        return jsonify({'error': 'name missing from request'}), 400
+
+    if description and description.isspace():
+        return jsonify({'error': 'description missing from request'}), 400
+
+    if status and status.lower() not in ('true', 'false'):
+        return jsonify({'error': 'Status should be either true or false'}), 400
+
+    if model == BucketList:
+        model_obj.description = description or model_obj.description
+        model_obj.name = name or model_obj.name
+
+    else:
+        done = True if status == 'true' else False
+        model_obj.done = done
+        model_obj.name = name or model_obj.name
+
+    db.session.commit()
+    return response
 
 
 # use this to carry out POST request only
@@ -131,6 +167,7 @@ def post_request(model, bucket_id, data):
 
     if model == BucketList:
         model_obj = model.query.filter_by(user_id=user_id, name=name).first()
+        description = data['description']
 
     else:
         model_obj = model.query.filter_by(
@@ -141,12 +178,12 @@ def post_request(model, bucket_id, data):
                         ' already exists'}), 409
 
     if model == BucketList:
-        model_obj = model(name=data['name'], user_id=user_id)
+        model_obj = model(name=name, description=description, user_id=user_id)
 
     else:
-        model_obj = model(name=data['name'], bucket_id=bucket_id)
+        model_obj = model(name=name, bucket_id=bucket_id)
 
     db.session.add(model_obj)
     db.session.commit()
     return jsonify({'message': model().__class__.__name__ +
-                    ' updated successfully'}), 201
+                    ' added successfully'}), 201
