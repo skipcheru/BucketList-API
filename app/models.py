@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 
 class User(db.Model):
     """Model for User."""
+
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -31,10 +32,12 @@ class BucketList(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
+    description = db.Column(db.String(128))
     items = db.relationship('Item', backref="items",
                             lazy='dynamic', cascade='delete,all')
     date_created = db.Column(db.DateTime, default=func.now())
-    date_modified = db.Column(db.DateTime)
+    date_modified = db.Column(
+        db.DateTime, default=func.now(), onupdate=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     def __repr__(self):
@@ -45,6 +48,7 @@ class BucketList(db.Model):
         bucket_json = {
             "Id": self.id,
             "Name": self.name,
+            "description": self.description,
             "items": [item.to_json() for item in self.items],
             "date_created": str(self.date_created),
             "date_modified": str(self.date_modified),
@@ -60,7 +64,8 @@ class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
     date_created = db.Column(db.DateTime, default=func.now())
-    date_modified = db.Column(db.DateTime)
+    date_modified = db.Column(
+        db.DateTime, default=func.now(), onupdate=func.now())
     done = db.Column(db.Boolean, default=False)
     bucket_id = db.Column(db.Integer, db.ForeignKey("bucketlist.id"))
 
