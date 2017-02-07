@@ -26,7 +26,7 @@ class TestBase(unittest.TestCase):
         self.headers = {'Authorization': 'JWT ' + token['access_token']}
 
         # create new bucketlist
-        data = json.dumps({'name': 'BucketList A'})
+        data = json.dumps({'name': '1st BucketList', 'description': 'Testing'})
         msg, url = 'BucketList added successfully', 'api/v1/bucketlists/'
 
         self.client.post(
