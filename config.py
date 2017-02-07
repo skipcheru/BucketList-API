@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -8,6 +9,9 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_RECORD_QUERIES = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    JWT_DEFAULT_REALM = '/api/v1/auth'
+    JWT_EXPIRATION_DELTA = timedelta(seconds=4500)
+    JWT_SECRET_KEY = 'just do it secretly dont snitch'
 
     @staticmethod
     def init_app(app):
@@ -27,7 +31,6 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     WTF_CSRF_ENABLED = False
-
 
 config = {
     'development': DevelopmentConfig,
