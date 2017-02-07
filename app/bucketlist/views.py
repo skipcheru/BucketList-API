@@ -20,15 +20,15 @@ def get_bucketlist():
     try:
         page, limit = int(page), int(limit)
     except ValueError as e:
-        return jsonify({"error": "Page  and limit should be Integers"}), 400
+        return jsonify({"error": "Page and limit should be Integers"}), 400
 
     results = BucketList.query.filter_by(user_id=current_identity.id).filter(
         BucketList.name.ilike(f'%{search}%')).paginate(page, limit, False)
 
-    if not results:
-        return jsonify({"error": "BucketList not found"}), 404
-
     buckets = [bucket.to_json() for bucket in results.items]
+
+    if not buckets:
+        return jsonify({"error": "BucketList not found"}), 404
 
     return jsonify(buckets), 200
 
@@ -53,7 +53,7 @@ def update_bucketlist(bucket_id):
 @bucketlists.route('/<int:bucket_id>', methods=['GET', 'DELETE'])
 @jwt_required()
 def bucketlist(bucket_id):
-    return any_request(request.method, BucketList, bucket_id)
+    return get_delete_request(request.method, BucketList, bucket_id)
 
 
 # Get all bucketlist items
@@ -86,11 +86,11 @@ def update_bucketlist_item(item_id, bucket_id):
                    methods=['GET', 'DELETE'])
 @jwt_required()
 def modify_bucketlist_item(bucket_id, item_id):
-    return any_request(request.method, Item, bucket_id, item_id)
+    return get_delete_request(request.method, Item, bucket_id, item_id)
 
 
 # use this to carry out GET, DELETE
-def any_request(method, model, bucket_id=None, item_id=None, data=None):
+def get_delete_request(method, model, bucket_id=None, item_id=None, data=None):
     user_id = current_identity.id
 
     if model == BucketList:
