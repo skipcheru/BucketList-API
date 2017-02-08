@@ -22,8 +22,8 @@ class ApiTestCase(unittest.TestCase):
     # test register
     def test_register(self):
         # test register with valid credentials
-        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         url, mime_type = 'api/v1/auth/register', 'application/json'
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         response = self.client.post(url, data=data, content_type=mime_type)
         user = User.query.filter_by(username='kiki').first()
         self.assertEqual(response.status_code, 201)
@@ -34,7 +34,6 @@ class ApiTestCase(unittest.TestCase):
 
         # test register existing user
         data = json.dumps({'username': 'kiki', 'password': 'nuff'})
-        url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 409)
 
@@ -43,7 +42,6 @@ class ApiTestCase(unittest.TestCase):
 
         # test registration with missing password
         data = json.dumps({'username': 'doodle', 'password': ''})
-        url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
 
@@ -52,7 +50,6 @@ class ApiTestCase(unittest.TestCase):
 
         # test registration with missing username
         data = json.dumps({'username': '', 'password': 'ninjax'})
-        url, mime_type = 'api/v1/auth/register', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
 
@@ -61,19 +58,19 @@ class ApiTestCase(unittest.TestCase):
 
         # test invalid content_type
         data = json.dumps({'username': 'kiki', 'password': 'nuf'})
-        url, mime_type = 'api/v1/auth/register', 'application/text/html'
+        mime_type = 'application/text/html'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 415)
 
         # Test login
     def test_login(self):
         # register user first
-        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         url, mime_type = 'api/v1/auth/register', 'application/json'
+        data = json.dumps({'username': 'kiki', 'password': 'nuff'})
         self.client.post(url, data=data, content_type=mime_type)
         # test login
         data = json.dumps({'username': 'kiki', 'password': 'nuff'})
-        url, mime_type = 'api/v1/auth/login', 'application/json'
+        url = 'api/v1/auth/login'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
 
@@ -82,12 +79,10 @@ class ApiTestCase(unittest.TestCase):
 
         # test user is not authenticated with invalid credentials
         data = json.dumps({'username': '123', 'password': '123'})
-        url, mime_type = 'api/v1/auth/login', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 401)
 
         # test user is not authenticated with password or username missing
         data = json.dumps({'username': '', 'password': ''})
-        url, mime_type = 'api/v1/auth/login', 'application/json'
         response = self.client.post(url, data=data, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
