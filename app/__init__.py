@@ -1,9 +1,11 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config import config
-from flask_jwt import JWT
 
 db = SQLAlchemy()
+
+from app.auth.views import auth, jwt
+from app.bucketlist.views import bucketlists
 
 
 def create_app(config_name):
@@ -12,14 +14,9 @@ def create_app(config_name):
     config[config_name].init_app(app)
 
     db.init_app(app)
-
-    from app.auth.validate import jwt
     jwt.init_app(app)
 
-    from app.auth.views import auth
     app.register_blueprint(auth)
-
-    from app.bucketlist.views import bucketlists
     app.register_blueprint(bucketlists)
 
     return app
