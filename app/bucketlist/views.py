@@ -130,6 +130,12 @@ def update_bucketlist_item(item_id, bucket_id):
     if not request.is_json:
         return jsonify({"error": 'Request must be a valid json'}), 415
 
+    item = Item.query.filter_by(
+        bucket_id=bucket_id, id=item_id).filter(User.id == user_id).first()
+
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+
     data = request.get_json()
     status = data.get('status', None)
     name = data.get('name', None)
@@ -139,12 +145,6 @@ def update_bucketlist_item(item_id, bucket_id):
 
     if status and status.lower() not in ('true', 'false'):
         return jsonify({'error': 'Status should be either true or false'}), 400
-
-    item = Item.query.filter_by(
-        bucket_id=bucket_id, id=item_id).filter(User.id == user_id).first()
-
-    if not item:
-        return jsonify({'error': 'Item not found'}), 404
 
     done = True if status == 'true' else False
     item.done = done
