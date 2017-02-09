@@ -45,7 +45,7 @@ class BucketList(db.Model):
 
     def to_json(self):
 
-        bucket_json = {
+        return {
             "Id": self.id,
             "Name": self.name,
             "description": self.description,
@@ -54,7 +54,6 @@ class BucketList(db.Model):
             "date_modified": str(self.date_modified),
             "created_by": self.user_id
         }
-        return bucket_json
 
 
 class Item(db.Model):
@@ -73,11 +72,10 @@ class Item(db.Model):
         return '<Item %s>' % self.name
 
     def to_json(self):
-        item_json = {
+        return {
             "id": self.id,
             "name": self.name,
             "date_created": str(self.date_created),
             "date_modified": str(self.date_modified),
             "done": self.done
         }
-        return item_json
