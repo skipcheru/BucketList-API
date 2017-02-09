@@ -11,9 +11,9 @@ def create_app(config_name):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-    jwt = JWT(app, authenticate, identity)
-
     db.init_app(app)
+
+    from app.auth.validate import jwt
     jwt.init_app(app)
 
     from app.auth.views import auth
@@ -23,7 +23,3 @@ def create_app(config_name):
     app.register_blueprint(bucketlists)
 
     return app
-
-from app.auth.validate import authenticate, identity, jwt
-
-jwt = JWT(create_app('default'), authenticate, identity)
