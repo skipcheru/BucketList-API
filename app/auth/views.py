@@ -1,12 +1,27 @@
 from flask import request, jsonify, Blueprint, abort, make_response
 from app import db
 from app.models import User
+from app.auth.validate import validate_json
+from flask_jwt import JWT
 from sqlalchemy import exc
 
 
+jwt = JWT()
 auth = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
-from app.auth.validate import validate_json, jwt
+
+# JWT handlers
+@jwt.authentication_handler
+def authenticate(username, password):
+    user = User.query.filter_by(username=username).scalar()
+    if user and user.verify_password(password):
+        return user
+
+
+@jwt.identity_handler
+def identity(payload):
+    user_id = payload['identity']
+    return User.query.filter(user_id == User.id).scalar()
 
 
 # Authenticate user
@@ -34,7 +49,7 @@ def register():
         user = User(username=username, password=password)
         db.session.add(user)
         db.session.commit()
-        return jsonify({'message': 'User registered successfully'}), 201
+        return jsonify({'message': user.username + ' registered successfully'}), 201
 
     except exc.IntegrityError as e:
         db.session.rollback()
