@@ -30,7 +30,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(user.username, 'kiki')
 
         response = json.loads(response.data)
-        self.assertEqual('User registered successfully', response['message'])
+        self.assertEqual('kiki registered successfully', response['message'])
 
         # test register existing user
         data = json.dumps({'username': 'kiki', 'password': 'nuff'})

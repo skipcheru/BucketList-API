@@ -20,7 +20,6 @@ class TestBucketList(TestBase):
     def test_create_bucketlist(self):
         # add new bucketlist
         data = json.dumps({'name': '2nd BucketList', "description": "Testing"})
-        message = 'BucketList added successfully'
         url, mime_type = 'api/v1/bucketlists/', 'application/json'
 
         response = self.client.post(
@@ -28,7 +27,7 @@ class TestBucketList(TestBase):
         self.assertEqual(response.status_code, 201)
 
         response = json.loads(response.data)
-        self.assertEqual(response['message'], message)
+        self.assertEqual(response['Name'], '2nd BucketList')
         bucket = BucketList.query.filter_by(name='2nd BucketList').first()
         self.assertEqual(bucket.name, '2nd BucketList')
 
@@ -59,8 +58,8 @@ class TestBucketList(TestBase):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
 
-        self.assertEqual(len(response), 1)
-        self.assertIn('1st BucketList', response[0]['Name'])
+        self.assertEqual(response['count'], 1)
+        self.assertIn('1st BucketList', response['buckets'][0]['Name'])
 
         # test search non existing bucket list
         url, mime_type = 'api/v1/bucketlists/?q=Alive', 'application/json'
@@ -87,8 +86,8 @@ class TestBucketList(TestBase):
                                    content_type=mime_type)
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(len(response), 2)
-        self.assertIn('Camp sites', response[1]['Name'])
+        self.assertEqual(response['count'], 2)
+        self.assertIn('Camp sites', response['buckets'][1]['Name'])
 
         # test get single bucketlist
         mime_type, url = 'application/json', 'api/v1/bucketlists/1'
@@ -104,8 +103,8 @@ class TestBucketList(TestBase):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
 
-        self.assertEqual(len(response), 1)
-        self.assertIn('1st BucketList', response[0]['Name'])
+        self.assertEqual(response['count'], 1)
+        self.assertIn('1st BucketList', response['buckets'][0]['Name'])
 
         # test invalid pagination params
         url = 'api/v1/bucketlists/?limit=e&page=1'
@@ -125,8 +124,7 @@ class TestBucketList(TestBase):
         self.assertEqual(response.status_code, 200)
 
         response = json.loads(response.data)
-        self.assertEqual(response['message'],
-                         'BucketList updated successfully')
+        self.assertEqual(response['Name'], 'The Name')
 
         # test update bucketlist with invalid name
         data = json.dumps({'name': ' '})
@@ -181,7 +179,6 @@ class TestBucketListItem(TestBase):
     def test_create_bucketlist_item(self):
         # add new bucketlist
         data = json.dumps({'name': 'An Item'})
-        message = 'Item added successfully'
         url, mime_type = 'api/v1/bucketlists/1/items/', 'application/json'
 
         response = self.client.post(
@@ -189,9 +186,17 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response.status_code, 201)
 
         response = json.loads(response.data)
-        self.assertEqual(response['message'], message)
+        self.assertEqual(response['name'], 'An Item')
         bucket = Item.query.filter_by(id=2).first()
         self.assertEqual(bucket.name, 'An Item')
+
+        # test add existing item
+        response = self.client.post(
+            url, data=data, headers=self.headers, content_type=mime_type)
+        self.assertEqual(response.status_code, 409)
+
+        response = json.loads(response.data)
+        self.assertEqual(response['error'], 'Item already exists')
 
     def test_get_bucketlist_item(self):
         # Get bucketlist item
@@ -215,8 +220,8 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response.status_code, 200)
 
         response = json.loads(response.data)
-        self.assertTrue(len(response), 2)
-        self.assertIn('The Item', response[0]['name'])
+        self.assertTrue(response['count'], 2)
+        self.assertIn('The Item', response['items'][0]['name'])
 
     # test search bucket list item
     def test_update_bucketlist_item(self):
@@ -228,8 +233,7 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response.status_code, 200)
 
         response = json.loads(response.data)
-        self.assertEqual(response['message'],
-                         'Item updated successfully')
+        self.assertEqual(response['name'], 'New Update')
 
         # test update bucketlist item with invalid status
         data = json.dumps({'status': ' '})
@@ -258,8 +262,7 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response.status_code, 200)
 
         response = json.loads(response.data)
-        self.assertEqual(response['message'],
-                         'Item updated successfully')
+        self.assertEqual(response['done'], True)
 
         # test update with invalid mime_type
         response = self.client.put(
