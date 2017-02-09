@@ -1,6 +1,6 @@
 from app.models import User, BucketList, Item
 from flask import request, jsonify, Blueprint
-from app import db, jwt
+from app import db
 from flask_jwt import jwt_required, current_identity
 from app.auth.validate import validate_json
 from sqlalchemy.sql import func

@@ -1,12 +1,12 @@
 from flask import request, jsonify, Blueprint, abort, make_response
-from app import db, jwt
+from app import db
 from app.models import User
 from sqlalchemy import exc
 
 
 auth = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
-from app.auth.validate import validate_json, authenticate, identity
+from app.auth.validate import validate_json, jwt
 
 
 # Authenticate user
