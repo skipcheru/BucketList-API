@@ -1,4 +1,8 @@
 # BucketList-API
+[![Coverage Status](https://coveralls.io/repos/github/skipcheru/BucketList-API/badge.svg?branch=develop)](https://coveralls.io/github/skipcheru/BucketList-API?branch=develop)
+[![Build Status](https://travis-ci.org/skipcheru/BucketList-API.svg?branch=develop)](https://travis-ci.org/skipcheru/BucketList-API)
+[![CircleCI](https://circleci.com/gh/skipcheru/BucketList-API/tree/develop.svg?style=shield)](https://circleci.com/gh/skipcheru/BucketList-API/tree/develop)
+
 
 Flask API
 =======
