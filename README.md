@@ -1,5 +1,5 @@
 # BucketList-API
-<<<<<<< HEAD
+
 Flask API
 =======
 It is a flask restful API with cool features like: Search, Token based Authentication and Pagination.
@@ -131,4 +131,3 @@ Oooh TDD is awesome, test the app using the command below:
 ```
 $ pytest --cov=app tests/
 ```
->>>>>>> 5832458... Update README.md
