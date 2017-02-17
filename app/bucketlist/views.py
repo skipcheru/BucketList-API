@@ -13,7 +13,7 @@ bucketlists = Blueprint('bucketlists', __name__,
 # Get all bucketlists and search bucketlists
 @bucketlists.route('/', methods=['GET'])
 @jwt_required()
-def get_bucketlist():
+def get_bucketlists():
     search = request.args.get('q', '')
     page = request.args.get('page', 1)
     limit = request.args.get('limit', 20)
@@ -26,12 +26,11 @@ def get_bucketlist():
         BucketList.name.ilike(f'%{search}%')).paginate(page, limit, False)
 
     buckets = [bucket.to_json() for bucket in results.items]
-    count = len(buckets)
 
     if not buckets and search:
         return jsonify({"error": "BucketList not found"}), 404
 
-    return jsonify({"count": count, "buckets": buckets}), 200
+    return jsonify({"count": len(buckets), "buckets": buckets}), 200
 
 
 # Add new bucketlist
@@ -57,29 +56,18 @@ def new_bucketlist():
 # Update single bucketlist
 @bucketlists.route('/<int:bucket_id>', methods=['PUT'])
 @jwt_required()
+@validate_json('name', 'description')
 def update_bucketlist(bucket_id):
-    user_id = current_identity.id
-
-    if not request.is_json:
-        return jsonify({"error": 'Request must be a valid json'}), 415
+    user_id, data = current_identity.id, request.get_json()
 
     bucket = BucketList.query.filter_by(user_id=user_id, id=bucket_id).first()
 
     if not bucket:
         return jsonify({'error': 'BucketList not found'}), 404
 
-    data = request.get_json()
-    description = data.get('description', None)
-    name = data.get('name', None)
+    bucket.description = data['description']
+    bucket.name = data['name']
 
-    if name and name.isspace():
-        return jsonify({'error': 'name missing from request'}), 400
-
-    if description and description.isspace():
-        return jsonify({'error': 'description missing from request'}), 400
-
-    bucket.description = description or bucket.description
-    bucket.name = name or bucket.name
     db.session.commit()
     return jsonify(bucket.to_json())
 
@@ -94,13 +82,11 @@ def bucketlist(bucket_id):
 # Get all bucketlist items
 @bucketlists.route('/<int:bucket_id>/items/', methods=['GET'])
 @jwt_required()
-def get_bucketlist_item(bucket_id):
+def get_bucketlist_items(bucket_id):
     all_items = [item.to_json() for item in
                  Item.query.filter_by(bucket_id=bucket_id).all()]
 
-    count = len(all_items)
-
-    return jsonify({"count": count, "items": all_items}), 200
+    return jsonify({"count": len(all_items), "items": all_items}), 200
 
 
 # Create new  bucketlist item
@@ -109,6 +95,7 @@ def get_bucketlist_item(bucket_id):
 @validate_json('name')
 def new_bucketlist_item(bucket_id):
     data, user_id = request.get_json(), current_identity.id
+
     item = Item.query.filter_by(bucket_id=bucket_id, name=data['name']).first()
 
     if item:
@@ -124,11 +111,9 @@ def new_bucketlist_item(bucket_id):
 # Update bucketlist item
 @bucketlists.route('/<int:bucket_id>/items/<int:item_id>', methods=['PUT'])
 @jwt_required()
+@validate_json('name', 'status')
 def update_bucketlist_item(item_id, bucket_id):
-    user_id = current_identity.id
-
-    if not request.is_json:
-        return jsonify({"error": 'Request must be a valid json'}), 415
+    data, user_id = request.get_json(), current_identity.id
 
     item = Item.query.filter_by(
         bucket_id=bucket_id, id=item_id).filter(User.id == user_id).first()
@@ -136,19 +121,15 @@ def update_bucketlist_item(item_id, bucket_id):
     if not item:
         return jsonify({'error': 'Item not found'}), 404
 
-    data = request.get_json()
-    status = data.get('status', None)
-    name = data.get('name', None)
+    status = data.get('status')
 
-    if name and name.isspace():
-        return jsonify({'error': 'name missing from request'}), 400
-
-    if status and status.lower() not in ('true', 'false'):
+    if status.lower() not in ('true', 'false'):
         return jsonify({'error': 'Status should be either true or false'}), 400
 
-    done = True if status == 'true' else False
-    item.done = done
-    item.name = name or item.name
+    status_mapping = {'true': True, 'false': False}
+
+    item.done = status_mapping[status]
+    item.name = data['name']
 
     db.session.commit()
     return jsonify(item.to_json())
