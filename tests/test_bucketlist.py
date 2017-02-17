@@ -117,7 +117,7 @@ class TestBucketList(TestBase):
 
     def test_update_bucketlist(self):
         # test update existing bucketlist
-        data = json.dumps({'name': 'The Name'})
+        data = json.dumps({'name': 'The Name', 'description': 'Describe this'})
         url, mime_type = 'api/v1/bucketlists/1', 'application/json'
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
@@ -127,22 +127,22 @@ class TestBucketList(TestBase):
         self.assertEqual(response['Name'], 'The Name')
 
         # test update bucketlist with invalid name
-        data = json.dumps({'name': ' '})
+        data = json.dumps({'name': ' ', 'description': 'Describe This'})
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
 
         response = json.loads(response.data)
-        self.assertEqual(response['error'], 'name missing from request')
+        self.assertEqual(response['error'], 'name required')
 
         # test update bucketlist with invalid description
-        data = json.dumps({'description': ' '})
+        data = json.dumps({'description': ' ', 'name': 'New Name'})
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
 
         response = json.loads(response.data)
-        self.assertEqual(response['error'], 'description missing from request')
+        self.assertEqual(response['error'], 'description required')
 
         # test update with content_type
         data = {'name': 'helo'}
@@ -154,6 +154,7 @@ class TestBucketList(TestBase):
         self.assertEqual(response['error'], 'Request must be a valid json')
 
         # test update non-existing bucketlist
+        data = json.dumps({'name': 'The Name', 'description': 'Describe this'})
         url = 'api/v1/bucketlists/0'
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
@@ -235,7 +236,7 @@ class TestBucketListItem(TestBase):
     # test search bucket list item
     def test_update_bucketlist_item(self):
         # test update existing bucketlist item
-        data = json.dumps({'name': 'New Update'})
+        data = json.dumps({'name': 'New Update', 'status': 'true'})
         url, mime_type = 'api/v1/bucketlists/1/items/1', 'application/json'
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
@@ -245,7 +246,7 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response['name'], 'New Update')
 
         # test update bucketlist item with invalid status
-        data = json.dumps({'status': ' '})
+        data = json.dumps({'name': 'New Update', 'status': 'hello'})
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
@@ -255,16 +256,17 @@ class TestBucketListItem(TestBase):
                          'Status should be either true or false')
 
         # test update bucketlist item with no name
-        data = json.dumps({'name': ' '})
+        data = json.dumps({'name': ' ', 'status': 'true'})
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 400)
 
         response = json.loads(response.data)
-        self.assertEqual(response['error'], 'name missing from request')
+        self.assertEqual(response['error'], 'name required')
 
         # test update non-existing bucketlist
         url = 'api/v1/bucketlists/1/items/5'
+        data = json.dumps({'name': 'New Update', 'status': 'true'})
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 404)
@@ -273,8 +275,8 @@ class TestBucketListItem(TestBase):
         self.assertEqual(response['error'], 'Item not found')
 
         # test update existing bucketlist done to True
-        data, url = json.dumps(
-            {'status': 'true'}), 'api/v1/bucketlists/1/items/1'
+        data = json.dumps({'status': 'true', 'name': 'New Update'})
+        url = 'api/v1/bucketlists/1/items/1'
         response = self.client.put(
             url, data=data, headers=self.headers, content_type=mime_type)
         self.assertEqual(response.status_code, 200)
